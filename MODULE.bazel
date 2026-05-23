@@ -1,0 +1,8 @@
+module(
+    name = "periphery_bazel_driver",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "rules_apple", version = "4.5.2")
+bazel_dep(name = "rules_swift", version = "3.6.0", max_compatibility_level = 3)

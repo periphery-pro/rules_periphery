@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+"""Run Periphery against a Bazel workspace through the generic project driver."""
+
+import argparse
+import json
+import os
+import pathlib
+import subprocess
+import sys
+
+
+OUTPUT_DIR = pathlib.Path("/var/tmp/periphery_bazel")
+GENERATED_BUILD = OUTPUT_DIR / "BUILD.bazel"
+
+TOP_LEVEL_KINDS = [
+    # rules_apple, iOS
+    "ios_app_clip",
+    "ios_application",
+    "ios_extension",
+    "ios_imessage_application",
+    "ios_imessage_extension",
+    "ios_sticker_pack_extension",
+    "ios_ui_test",
+    "ios_unit_test",
+    # rules_apple, tvOS
+    "tvos_application",
+    "tvos_extension",
+    "tvos_ui_test",
+    "tvos_unit_test",
+    # rules_apple, watchOS
+    "watchos_application",
+    "watchos_extension",
+    "watchos_ui_test",
+    "watchos_unit_test",
+    # rules_apple, visionOS
+    "visionos_application",
+    "visionos_ui_test",
+    "visionos_unit_test",
+    # rules_apple, macOS
+    "macos_application",
+    "macos_command_line_application",
+    "macos_extension",
+    "macos_kernel_extension",
+    "macos_quick_look_plugin",
+    "macos_spotlight_importer",
+    "macos_xpc_service",
+    "macos_ui_test",
+    "macos_unit_test",
+    # rules_swift
+    "swift_binary",
+    "swift_test",
+    "swift_compiler_plugin",
+]
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Generate and run a Periphery Bazel scan target.",
+        allow_abbrev=False,
+    )
+    parser.add_argument("--query", help="Bazel query for top-level targets to scan.")
+    parser.add_argument("--filter", help="Filter pattern applied to the default target query.")
+    parser.add_argument(
+        "--global-indexstore",
+        help="Path to a global index store populated by Bazel.",
+    )
+    parser.add_argument(
+        "--check-visibility",
+        action="store_true",
+        help="Enable Bazel visibility checking while running the generated scan target.",
+    )
+    parser.add_argument(
+        "--bazel-arg",
+        action="append",
+        default=[],
+        help="Additional argument passed to `bazel run`. May be repeated.",
+    )
+
+    args, periphery_args = parser.parse_known_args()
+    return args, [arg for arg in periphery_args if arg != "--"]
+
+
+def find_workspace_root(start):
+    path = pathlib.Path(start).resolve()
+    for candidate in [path, *path.parents]:
+        if (candidate / "MODULE.bazel").exists() or (candidate / "WORKSPACE").exists():
+            return candidate
+
+    raise SystemExit("error: current directory is not inside a Bazel workspace")
+
+
+def default_query(filter_pattern):
+    kinds = "|".join(TOP_LEVEL_KINDS)
+    query = f"filter('^//.*', kind('({kinds}) rule', deps(//...)))"
+    if filter_pattern:
+        return f"filter('{filter_pattern}', {query})"
+    return query
+
+
+def run_query(query, cwd):
+    result = subprocess.run(
+        ["bazel", "query", query],
+        cwd=cwd,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr)
+        raise SystemExit(result.returncode)
+
+    return [line for line in result.stdout.splitlines() if line]
+
+
+def starlark_string(value):
+    return json.dumps(str(value))
+
+
+def write_generated_build(targets, args, periphery_args, workspace_root):
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    deps = "\n".join(f"        {starlark_string(f'@@{target}')}," for target in targets)
+    global_indexstore = (
+        starlark_string(pathlib.Path(args.global_indexstore).expanduser().resolve())
+        if args.global_indexstore
+        else "None"
+    )
+    periphery_args_list = "\n".join(f"        {starlark_string(arg)}," for arg in periphery_args)
+
+    GENERATED_BUILD.write_text(
+        f"""load("@periphery_bazel_driver//:rules.bzl", "scan")
+
+scan(
+    name = "scan",
+    testonly = True,
+    periphery = "@periphery_bin//:periphery",
+    license_store = {starlark_string(workspace_root)},
+    global_indexstore = {global_indexstore},
+    periphery_args = [
+{periphery_args_list}
+    ],
+    deps = [
+{deps}
+    ],
+)
+""",
+        encoding="utf-8",
+    )
+
+
+def run_scan(args, workspace_root):
+    command = [
+        "bazel",
+        "run",
+        f"--check_visibility={'true' if args.check_visibility else 'false'}",
+        "--ui_event_filters=-info,-debug,-warning",
+        *args.bazel_arg,
+        "@periphery_generated//:scan",
+    ]
+    return subprocess.run(command, cwd=workspace_root).returncode
+
+
+def main():
+    args, periphery_args = parse_args()
+    workspace_root = find_workspace_root(os.getcwd())
+    query = args.query or default_query(args.filter)
+    targets = run_query(query, workspace_root)
+    write_generated_build(targets, args, periphery_args, workspace_root)
+    return run_scan(args, workspace_root)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

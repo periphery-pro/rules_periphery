@@ -1,0 +1,11 @@
+module(name = "periphery_bazel_driver_smoke")
+
+bazel_dep(name = "periphery_bazel_driver", version = "0.0.0")
+local_path_override(
+    module_name = "periphery_bazel_driver",
+    path = "../../..",
+)
+
+periphery = use_extension("@periphery_bazel_driver//:extensions.bzl", "periphery")
+periphery.local_binary(path = "/bin/echo")
+use_repo(periphery, "periphery_bin", "periphery_generated")
