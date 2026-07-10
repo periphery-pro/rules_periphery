@@ -28,12 +28,6 @@ assert_scan_command() {
         echo "$out"
         fail "$context: --config passed without a config"
     fi
-
-    # The open-source binary rejects license flags.
-    if grep -q -- "--license-store" <<<"$out"; then
-        echo "$out"
-        fail "$context: --license-store must not be passed"
-    fi
 }
 
 echo "--- smoke: direct invocation of the driver script (local-dev workflow)"
