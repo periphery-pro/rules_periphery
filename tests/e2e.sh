@@ -17,6 +17,10 @@ echo "--- e2e: auto-discovery scan (bazel run //:periphery)"
 out="$(bazel run //:periphery 2>&1)" || { echo "$out"; fail "bazel run //:periphery exited non-zero"; }
 grep -q "UnusedSymbol" <<<"$out" || { echo "$out"; fail "expected UnusedSymbol in auto-discovery scan output"; }
 
+echo "--- e2e: auto-discovery scan with visibility checking (bazel run //:periphery_checked)"
+out="$(bazel run //:periphery_checked 2>&1)" || { echo "$out"; fail "bazel run //:periphery_checked exited non-zero"; }
+grep -q "UnusedSymbol" <<<"$out" || { echo "$out"; fail "expected UnusedSymbol in checked-visibility scan output"; }
+
 echo "--- e2e: explicit scan target (bazel run //:app_scan)"
 out="$(bazel run //:app_scan 2>&1)" || { echo "$out"; fail "bazel run //:app_scan exited non-zero"; }
 grep -q "UnusedSymbol" <<<"$out" || { echo "$out"; fail "expected UnusedSymbol in scan output"; }

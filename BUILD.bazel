@@ -11,3 +11,10 @@ toolchain_type(
     name = "toolchain_type",
     visibility = ["//visibility:public"],
 )
+
+# A stable visibility label for the generated scan target, so projects using
+# `check_visibility` don't have to reference the generated repo directly.
+package_group(
+    name = "generated",
+    includes = ["@periphery_generated//visibility:package_group"],
+)

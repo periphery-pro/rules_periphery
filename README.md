@@ -144,7 +144,7 @@ periphery(
     # Use a global index store instead of per-module stores.
     global_indexstore = "/path/to/indexstore",
     # Run the scan with Bazel visibility checking enabled.
-    check_visibility = False,
+    check_visibility = True,
     # Extra arguments forwarded to the nested `bazel run`.
     bazel_args = [],
     # Arguments forwarded to `periphery scan`.
@@ -161,6 +161,24 @@ bazel run //:periphery -- --strict --quiet
 The underlying `tools/periphery-bazel` script can also be run directly
 (outside `bazel run`) from a workspace directory, which is useful for local
 development.
+
+### Visibility checking
+
+By default the generated scan target is built with `--check_visibility=false`,
+since it references targets across your workspace that may not be visible to
+it. Disabling visibility checking can invalidate Bazel's analysis cache,
+resulting in slower subsequent builds.
+
+Set `check_visibility = True` to avoid that, and grant the generated scan
+target visibility to the targets it scans using the `@rules_periphery//:generated`
+package group:
+
+```starlark
+swift_library(
+    name = "MyLib",
+    visibility = ["@rules_periphery//:generated"],
+)
+```
 
 ## Development
 

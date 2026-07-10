@@ -8,16 +8,26 @@ swift_binary(
         "app/AppCode.swift",
         "app/main.swift",
     ],
+    visibility = ["@rules_periphery//:generated"],
 )
 
 swift_binary(
     name = "Clean",
     srcs = ["clean/main.swift"],
+    visibility = ["@rules_periphery//:generated"],
 )
 
 # Auto-discovery entry point; scans all top-level targets in the workspace.
 periphery(
     name = "periphery",
+    periphery_args = ["--disable-update-check"],
+)
+
+# As above, but with Bazel visibility checking enabled. The scanned targets
+# grant visibility to the generated scan target via `@rules_periphery//:generated`.
+periphery(
+    name = "periphery_checked",
+    check_visibility = True,
     periphery_args = ["--disable-update-check"],
 )
 
