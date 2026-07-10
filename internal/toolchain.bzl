@@ -8,7 +8,11 @@ def _periphery_toolchain_impl(ctx):
         fail(
             "No Periphery binary is configured. Configure one in your MODULE.bazel:\n\n" +
             "periphery = use_extension(\"@rules_periphery//:extensions.bzl\", \"periphery\")\n" +
-            "periphery.binary_archive(url = \"...\", sha256 = \"...\")",
+            "periphery.binary_archive(url = \"...\", sha256 = \"...\")\n\n" +
+            "or, for a binary on the local machine:\n\n" +
+            "periphery.local_binary(path = \"path/to/periphery\")\n\n" +
+            "or, to scan with a binary built from source in this workspace, register a\n" +
+            "toolchain using periphery_toolchain from @rules_periphery//:toolchain.bzl.",
         )
 
     info = ctx.attr.binary[DefaultInfo]

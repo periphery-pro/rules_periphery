@@ -72,8 +72,12 @@ def _periphery_local_repo_impl(repository_ctx):
         "periphery.sh",
         """#!/usr/bin/env bash
 set -euo pipefail
-exec "{executable_path}" "$@"
-""".format(executable_path = path),
+exec {executable_path} "$@"
+""".format(
+            # Single-quoted so paths containing `$`, quotes, or backticks
+            # survive intact.
+            executable_path = "'" + path.replace("'", "'\\''") + "'",
+        ),
         executable = True,
     )
     repository_ctx.file(

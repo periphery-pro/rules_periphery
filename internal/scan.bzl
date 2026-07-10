@@ -299,7 +299,12 @@ def scan_report_impl(ctx):
     ctx.actions.run(
         executable = _toolchain(ctx).periphery_files_to_run,
         arguments = [args],
-        inputs = action_inputs,
+        # Include the data targets' runfiles, matching what scan and scan_test
+        # provide at run time.
+        inputs = depset(
+            action_inputs,
+            transitive = [runfiles.files for runfiles in _data_runfiles(ctx)],
+        ),
         outputs = [report_file],
         mnemonic = "PeripheryScan",
         progress_message = "Generating Periphery report for %{label}",

@@ -150,6 +150,11 @@ default_query() {
     fi
 }
 
+if [ -n "$global_indexstore" ] && [ ! -e "$global_indexstore" ]; then
+    echo "error: --global-indexstore path does not exist: $global_indexstore" >&2
+    exit 1
+fi
+
 workspace_root="$(find_workspace_root)"
 
 # Scope the generated package to the workspace so that concurrent scans of
