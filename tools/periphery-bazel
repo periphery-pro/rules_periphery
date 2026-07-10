@@ -173,6 +173,9 @@ EOF
 
 mkdir -p "$OUTPUT_DIR"
 
+# Only paths and target labels are serialized into the generated BUILD;
+# periphery args are forwarded at run time, so free-form user input never
+# needs escaping into Starlark.
 {
     printf 'load("@rules_periphery//:rules.bzl", "scan")\n\n'
     printf 'scan(\n'
@@ -181,13 +184,6 @@ mkdir -p "$OUTPUT_DIR"
     if [ -n "$global_indexstore" ]; then
         printf '    global_indexstore = %s,\n' "$(starlark_string "$(abs_path "$global_indexstore")")"
     fi
-    printf '    periphery_args = [\n'
-    if [ ${#periphery_args[@]} -gt 0 ]; then
-        for arg in "${periphery_args[@]}"; do
-            printf '        %s,\n' "$(starlark_string "$arg")"
-        done
-    fi
-    printf '    ],\n'
     printf '    deps = [\n'
     if [ ${#targets[@]} -gt 0 ]; then
         for target in "${targets[@]}"; do
@@ -203,4 +199,5 @@ exec bazel run \
     "--check_visibility=${check_visibility}" \
     "--ui_event_filters=-info,-debug,-warning" \
     "${bazel_args[@]+"${bazel_args[@]}"}" \
-    @periphery_generated//:scan
+    @periphery_generated//:scan \
+    -- "${periphery_args[@]+"${periphery_args[@]}"}"
