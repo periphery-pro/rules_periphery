@@ -229,7 +229,6 @@ def _scan_impl_common(ctx, is_test):
         output = scan_script,
         substitutions = {
             "%periphery_path%": periphery.short_path,
-            "%license_store_path%": ctx.attr.license_store,
             "%config_path%": path_for(ctx.file.config) if ctx.file.config else "",
             "%project_config_path%": path_for(project_config_file),
             "%periphery_args%": " ".join([_shell_quote(arg) for arg in ctx.attr.periphery_args]),
@@ -282,8 +281,6 @@ def scan_report_impl(ctx):
     args.add("--format", ctx.attr.format)
     args.add("--write-results", report_file.path)
     args.add("--generic-project-config", project_config_file.path)
-    if ctx.attr.license_store:
-        args.add("--license-store", ctx.attr.license_store)
     if ctx.file.config:
         args.add("--config", ctx.file.config.path)
     args.add_all(ctx.attr.periphery_args)

@@ -28,7 +28,6 @@ _COMMON_ATTRS = {
         doc = "Top-level project targets to scan.",
     ),
     "global_indexstore": attr.string(doc = "Path to a global index store."),
-    "license_store": attr.string(doc = "Path used to locate the license store."),
     "periphery_args": attr.string_list(doc = "Arguments forwarded to `periphery scan`."),
 }
 

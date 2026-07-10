@@ -1,6 +1,6 @@
 # Periphery Bazel Rules
 
-Bazel integration for [Periphery](https://periphery.pro).
+Bazel integration for [Periphery](https://github.com/peripheryapp/periphery).
 
 ## Module Setup
 
@@ -110,16 +110,6 @@ scan_test(
 `scan_report`'s `format` accepts any of Periphery's output formats: `xcode`,
 `csv`, `json`, `checkstyle`, `codeclimate`, `github-actions`,
 `github-markdown`, `gitlab-codequality`.
-
-### License discovery
-
-`bazel run //:scan` locates your Periphery license through the project root,
-like any other invocation. `scan_test` runs from Bazel's test sandbox, so
-point it at your project with:
-
-```sh
-bazel test //:scan_test --test_env=PERIPHERY_LICENSE_STORE=/path/to/project
-```
 
 ## Generating the scan target
 
