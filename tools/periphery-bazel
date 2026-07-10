@@ -91,12 +91,13 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# Fall back to environment configuration (used by the `periphery` macro), with
-# command-line arguments taking precedence.
-if [ -z "$query" ]; then query="${PERIPHERY_QUERY:-}"; fi
-if [ -z "$filter" ]; then filter="${PERIPHERY_FILTER:-}"; fi
-if [ -z "$global_indexstore" ]; then global_indexstore="${PERIPHERY_GLOBAL_INDEXSTORE:-}"; fi
-if [ "$check_visibility" != "true" ] && [ "${PERIPHERY_CHECK_VISIBILITY:-}" = "true" ]; then
+# Fall back to environment configuration, with command-line arguments taking
+# precedence. The `__`-prefixed variables are internal transport from the
+# `periphery` macro, not an interface to set directly.
+if [ -z "$query" ]; then query="${__PERIPHERY_QUERY:-}"; fi
+if [ -z "$filter" ]; then filter="${__PERIPHERY_FILTER:-}"; fi
+if [ -z "$global_indexstore" ]; then global_indexstore="${__PERIPHERY_GLOBAL_INDEXSTORE:-}"; fi
+if [ "$check_visibility" != "true" ] && [ "${__PERIPHERY_CHECK_VISIBILITY:-}" = "true" ]; then
     check_visibility="true"
 fi
 

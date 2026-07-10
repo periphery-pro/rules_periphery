@@ -39,16 +39,18 @@ def periphery(
     """
 
     # Scalar configuration is passed via the environment so values containing
-    # spaces or shell metacharacters (notably `query`) survive intact.
+    # spaces or shell metacharacters (notably `query`) survive intact. The
+    # `__` prefix marks these as internal transport between this macro and
+    # the driver script, not an interface to set directly.
     env = {}
     if query:
-        env["PERIPHERY_QUERY"] = query
+        env["__PERIPHERY_QUERY"] = query
     if filter:
-        env["PERIPHERY_FILTER"] = filter
+        env["__PERIPHERY_FILTER"] = filter
     if global_indexstore:
-        env["PERIPHERY_GLOBAL_INDEXSTORE"] = global_indexstore
+        env["__PERIPHERY_GLOBAL_INDEXSTORE"] = global_indexstore
     if check_visibility:
-        env["PERIPHERY_CHECK_VISIBILITY"] = "true"
+        env["__PERIPHERY_CHECK_VISIBILITY"] = "true"
 
     args = []
     for arg in bazel_args:
