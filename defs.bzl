@@ -2,7 +2,14 @@
 Public macro for defining a runnable Periphery scan target.
 """
 
+load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+def _quote(arg):
+    # `args` values undergo make-variable expansion and Bourne shell
+    # tokenization; escaping `$` defeats the former and quoting the latter, so
+    # arguments arrive at the binary exactly as written.
+    return shell.quote(arg.replace("$", "$$"))
 
 def periphery(
         name,
@@ -45,10 +52,10 @@ def periphery(
 
     args = []
     for arg in bazel_args:
-        args.extend(["--bazel-arg", arg])
+        args.extend(["--bazel-arg", _quote(arg)])
     if periphery_args:
         args.append("--")
-        args.extend(periphery_args)
+        args.extend([_quote(arg) for arg in periphery_args])
 
     sh_binary(
         name = name,

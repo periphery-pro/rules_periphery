@@ -7,5 +7,5 @@ local_path_override(
 )
 
 periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
-periphery.local_binary(path = "/bin/echo")
+periphery.local_binary(path = "print_args.sh")
 use_repo(periphery, "periphery_generated")
