@@ -1,5 +1,18 @@
+load("@rules_periphery//:defs.bzl", "periphery")
+
 filegroup(
     name = "app",
     srcs = ["app.sh"],
-    visibility = ["@periphery_generated//visibility:package_group"],
+)
+
+periphery(
+    name = "periphery",
+    periphery_args = [
+        "--quiet",
+        "--report-exclude",
+        # An argument containing spaces and a make-variable-like token; must
+        # arrive at the binary as one argv entry, verbatim.
+        "**/A B $(C)/**",
+    ],
+    query = "//:app",
 )

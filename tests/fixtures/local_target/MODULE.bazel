@@ -1,4 +1,4 @@
-module(name = "rules_periphery_smoke")
+module(name = "rules_periphery_local_target")
 
 bazel_dep(name = "rules_periphery", version = "0.0.0")
 local_path_override(
@@ -6,6 +6,10 @@ local_path_override(
     path = "../../..",
 )
 
+bazel_dep(name = "rules_shell", version = "0.8.0")
+
+# No binary is configured on the extension; the toolchain below provides it.
 periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
-periphery.local_binary(path = "print_args.sh")
 use_repo(periphery, "periphery_generated")
+
+register_toolchains("//:periphery_toolchain")

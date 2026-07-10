@@ -1,0 +1,16 @@
+module(name = "rules_periphery_e2e")
+
+bazel_dep(name = "rules_periphery", version = "0.0.0")
+local_path_override(
+    module_name = "rules_periphery",
+    path = "../../..",
+)
+
+bazel_dep(name = "rules_swift", version = "3.6.0")
+
+periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
+periphery.binary_archive(
+    sha256 = "f8283239a82c638a4d5cfb91c42519980462b7853299562f663eb33ce54c8dc6",
+    url = "https://github.com/peripheryapp/periphery/releases/download/3.7.4/periphery-3.7.4.zip",
+)
+use_repo(periphery, "periphery_generated")

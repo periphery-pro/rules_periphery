@@ -1,0 +1,68 @@
+load("@rules_periphery//:defs.bzl", "periphery")
+load("@rules_periphery//:rules.bzl", "scan", "scan_report", "scan_test")
+load("@rules_swift//swift:swift_binary.bzl", "swift_binary")
+
+swift_binary(
+    name = "App",
+    srcs = [
+        "app/AppCode.swift",
+        "app/main.swift",
+    ],
+    visibility = ["@rules_periphery//:generated"],
+)
+
+swift_binary(
+    name = "Clean",
+    srcs = ["clean/main.swift"],
+    visibility = ["@rules_periphery//:generated"],
+)
+
+# Auto-discovery entry point; scans all top-level targets in the workspace.
+periphery(
+    name = "periphery",
+    periphery_args = ["--disable-update-check"],
+)
+
+# As above, but with Bazel visibility checking enabled. The scanned targets
+# grant visibility to the generated scan target via `@rules_periphery//:generated`.
+periphery(
+    name = "periphery_checked",
+    check_visibility = True,
+    periphery_args = ["--disable-update-check"],
+)
+
+# Explicitly declared scan target.
+scan(
+    name = "app_scan",
+    periphery_args = ["--disable-update-check"],
+    deps = [":App"],
+)
+
+# Passes: the fixture has no unused code.
+scan_test(
+    name = "clean_scan_test",
+    deps = [":Clean"],
+)
+
+# Fails (unused code present); run explicitly by e2e.sh, hence manual.
+scan_test(
+    name = "app_scan_test",
+    tags = ["manual"],
+    deps = [":App"],
+)
+
+# Passes despite the unused code, as the config excludes the offending file
+# from the report.
+scan_test(
+    name = "app_config_scan_test",
+    config = "exclude_config.yml",
+    deps = [":App"],
+)
+
+# Report generated at build time. Note: a report for a clean target requires a
+# periphery release where --write-results also writes empty results.
+scan_report(
+    name = "app_report",
+    format = "json",
+    deps = [":App"],
+)

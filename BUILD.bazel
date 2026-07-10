@@ -1,4 +1,21 @@
+# This package is loaded whenever the toolchain type is resolved, so it must
+# not reference dev dependencies; those live in //dev.
+
 exports_files([
+    "defs.bzl",
     "extensions.bzl",
     "rules.bzl",
+    "toolchain.bzl",
 ])
+
+toolchain_type(
+    name = "toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+# A stable visibility label for the generated scan target, so projects using
+# `check_visibility` don't have to reference the generated repo directly.
+package_group(
+    name = "generated",
+    includes = ["@periphery_generated//visibility:package_group"],
+)
