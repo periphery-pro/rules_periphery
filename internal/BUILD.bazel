@@ -1,4 +1,7 @@
 exports_files(
-    ["scan_template.sh"],
+    [
+        "scan_template.sh",
+        "scan_test_template.sh",
+    ],
     visibility = ["//:__subpackages__"],
 )

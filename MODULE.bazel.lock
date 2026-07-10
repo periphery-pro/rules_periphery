@@ -201,6 +201,23 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
+    "//:extensions.bzl%periphery": {
+      "general": {
+        "bzlTransitiveDigest": "dKcSkSXO5280tvvupZWdPbK2k4G7BNQctKSrpt0KrOs=",
+        "usagesDigest": "aXT/taYbNC2Jyqw6JutB6fJ2DRrTAzB6ZIL+EfVE2p4=",
+        "recordedInputs": [],
+        "generatedRepoSpecs": {
+          "periphery_bin": {
+            "repoRuleId": "@@//:extensions.bzl%periphery_stub_repo",
+            "attributes": {}
+          },
+          "periphery_generated": {
+            "repoRuleId": "@@//:extensions.bzl%periphery_generated_repo",
+            "attributes": {}
+          }
+        }
+      }
+    },
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
         "bzlTransitiveDigest": "Ga4z8lQy1YQ5rAMy+dOl0dqcCEBnYNCXku8x3YQmDZI=",

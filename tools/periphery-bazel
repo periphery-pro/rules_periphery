@@ -10,9 +10,6 @@
 
 set -euo pipefail
 
-OUTPUT_DIR="/var/tmp/periphery_bazel"
-GENERATED_BUILD="${OUTPUT_DIR}/BUILD.bazel"
-
 TOP_LEVEL_KINDS=(
     # rules_apple, iOS
     ios_app_clip
@@ -155,6 +152,12 @@ default_query() {
 
 workspace_root="$(find_workspace_root)"
 
+# Scope the generated package to the workspace so that concurrent scans of
+# different workspaces don't collide. Must match the path derivation in
+# extensions.bzl.
+OUTPUT_DIR="/var/tmp/periphery_bazel/${workspace_root//\//_}"
+GENERATED_BUILD="${OUTPUT_DIR}/BUILD.bazel"
+
 if [ -z "$query" ]; then
     query="$(default_query)"
 fi
@@ -175,12 +178,8 @@ mkdir -p "$OUTPUT_DIR"
     printf 'scan(\n'
     printf '    name = "scan",\n'
     printf '    testonly = True,\n'
-    printf '    periphery = "@periphery_bin//:periphery",\n'
-    printf '    license_store = %s,\n' "$(starlark_string "$workspace_root")"
     if [ -n "$global_indexstore" ]; then
         printf '    global_indexstore = %s,\n' "$(starlark_string "$(abs_path "$global_indexstore")")"
-    else
-        printf '    global_indexstore = None,\n'
     fi
     printf '    periphery_args = [\n'
     if [ ${#periphery_args[@]} -gt 0 ]; then

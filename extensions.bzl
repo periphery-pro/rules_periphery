@@ -2,98 +2,56 @@
 Bzlmod extensions for wiring Periphery into a Bazel workspace.
 """
 
-def _write_periphery_build(repository_ctx, executable_path):
-    repository_ctx.file(
-        "periphery_binary.bzl",
-        """def _periphery_binary_impl(ctx):
-    executable = ctx.actions.declare_file(ctx.label.name)
-    ctx.actions.symlink(output = executable, target_file = ctx.file.src, is_executable = True)
-    return DefaultInfo(
-        executable = executable,
-        runfiles = ctx.runfiles(files = ctx.files.data),
-    )
+_TOOLCHAIN_BUILD = """
+load("@rules_periphery//internal:toolchain.bzl", "periphery_toolchain")
 
-periphery_binary = rule(
-    implementation = _periphery_binary_impl,
-    attrs = {
-        "data": attr.label_list(allow_files = True),
-        "src": attr.label(allow_single_file = True, executable = True, cfg = "target", mandatory = True),
-    },
-    executable = True,
+periphery_toolchain(
+    name = "periphery_toolchain",
+    binary = ":periphery",
 )
-""",
-    )
-    repository_ctx.file(
-        "periphery.sh",
-        """#!/usr/bin/env bash
-set -euo pipefail
-exec "$(dirname "$0")/{executable_path}" "$@"
-""".format(executable_path = executable_path),
-        executable = True,
-    )
-    repository_ctx.file(
-        "BUILD.bazel",
-        """load(":periphery_binary.bzl", "periphery_binary")
 
-periphery_binary(
-    name = "periphery",
-    src = "periphery.sh",
-    data = ["{executable_path}"],
+toolchain(
+    name = "toolchain",
+    toolchain = ":periphery_toolchain",
+    toolchain_type = "@rules_periphery//:toolchain_type",
     visibility = ["//visibility:public"],
 )
-""".format(executable_path = executable_path),
-    )
+"""
 
-def _write_local_periphery_build(repository_ctx, executable_path):
-    repository_ctx.file(
-        "periphery_binary.bzl",
-        """def _periphery_binary_impl(ctx):
-    executable = ctx.actions.declare_file(ctx.label.name)
-    ctx.actions.symlink(output = executable, target_file = ctx.file.src, is_executable = True)
-    return DefaultInfo(executable = executable)
+_STUB_TOOLCHAIN_BUILD = """
+load("@rules_periphery//internal:toolchain.bzl", "periphery_toolchain")
 
-periphery_binary = rule(
-    implementation = _periphery_binary_impl,
-    attrs = {
-        "src": attr.label(allow_single_file = True, executable = True, cfg = "target", mandatory = True),
-    },
-    executable = True,
+periphery_toolchain(
+    name = "periphery_toolchain",
 )
-""",
-    )
-    repository_ctx.file(
-        "periphery.sh",
-        """#!/usr/bin/env bash
-set -euo pipefail
-exec "{executable_path}" "$@"
-""".format(executable_path = executable_path),
-        executable = True,
-    )
-    repository_ctx.file(
-        "BUILD.bazel",
-        """load(":periphery_binary.bzl", "periphery_binary")
 
-periphery_binary(
-    name = "periphery",
-    src = "periphery.sh",
+toolchain(
+    name = "toolchain",
+    toolchain = ":periphery_toolchain",
+    toolchain_type = "@rules_periphery//:toolchain_type",
     visibility = ["//visibility:public"],
 )
-""",
-    )
+"""
 
 def _periphery_archive_repo_impl(repository_ctx):
-    if repository_ctx.attr.strip_prefix:
-        repository_ctx.download_and_extract(
-            url = repository_ctx.attr.url,
-            sha256 = repository_ctx.attr.sha256,
-            stripPrefix = repository_ctx.attr.strip_prefix,
-        )
-    else:
-        repository_ctx.download_and_extract(
-            url = repository_ctx.attr.url,
-            sha256 = repository_ctx.attr.sha256,
-        )
-    _write_periphery_build(repository_ctx, repository_ctx.attr.binary_path)
+    repository_ctx.download_and_extract(
+        url = repository_ctx.attr.url,
+        sha256 = repository_ctx.attr.sha256,
+        stripPrefix = repository_ctx.attr.strip_prefix,
+        output = "bin",
+    )
+    repository_ctx.file(
+        "BUILD.bazel",
+        """load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+sh_binary(
+    name = "periphery",
+    srcs = ["bin/{binary_path}"],
+    data = glob(["bin/**"]),
+    visibility = ["//visibility:public"],
+)
+""".format(binary_path = repository_ctx.attr.binary_path) + _TOOLCHAIN_BUILD,
+    )
 
 periphery_archive_repo = repository_rule(
     implementation = _periphery_archive_repo_impl,
@@ -106,7 +64,29 @@ periphery_archive_repo = repository_rule(
 )
 
 def _periphery_local_repo_impl(repository_ctx):
-    _write_local_periphery_build(repository_ctx, repository_ctx.attr.path)
+    path = repository_ctx.attr.path
+    if not path.startswith("/"):
+        path = "{}/{}".format(repository_ctx.workspace_root, path)
+
+    repository_ctx.file(
+        "periphery.sh",
+        """#!/usr/bin/env bash
+set -euo pipefail
+exec "{executable_path}" "$@"
+""".format(executable_path = path),
+        executable = True,
+    )
+    repository_ctx.file(
+        "BUILD.bazel",
+        """load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+sh_binary(
+    name = "periphery",
+    srcs = ["periphery.sh"],
+    visibility = ["//visibility:public"],
+)
+""" + _TOOLCHAIN_BUILD,
+    )
 
 periphery_local_repo = repository_rule(
     implementation = _periphery_local_repo_impl,
@@ -115,6 +95,18 @@ periphery_local_repo = repository_rule(
     },
     local = True,
 )
+
+def _periphery_stub_repo_impl(repository_ctx):
+    repository_ctx.file("BUILD.bazel", _STUB_TOOLCHAIN_BUILD)
+
+periphery_stub_repo = repository_rule(
+    implementation = _periphery_stub_repo_impl,
+)
+
+def _workspace_output_dir(repository_ctx):
+    return "/var/tmp/periphery_bazel/{}".format(
+        str(repository_ctx.workspace_root).replace("/", "_"),
+    )
 
 def _generated_repo_impl(repository_ctx):
     repository_ctx.file(
@@ -126,7 +118,7 @@ def _generated_repo_impl(repository_ctx):
 """,
     )
     repository_ctx.symlink(
-        "/var/tmp/periphery_bazel/BUILD.bazel",
+        "{}/BUILD.bazel".format(_workspace_output_dir(repository_ctx)),
         "BUILD.bazel",
     )
 
@@ -179,7 +171,7 @@ def _periphery_extension_impl(module_ctx):
             url = binary_archive.url,
         )
     else:
-        fail("Configure either periphery.local_binary(...) or periphery.binary_archive(...).")
+        periphery_stub_repo(name = "periphery_bin")
 
     periphery_generated_repo(name = "periphery_generated")
 

@@ -18,7 +18,7 @@ jobs:
       - uses: jdx/mise-action@v2
       - run: mise run lint-ci
 
-  smoke:
+  test:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,3 +28,4 @@ jobs:
           disk-cache: ${{ github.workflow }}
           repository-cache: true
       - run: ./tests/smoke.sh
+      - run: ./tests/e2e.sh

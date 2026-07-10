@@ -1,10 +1,11 @@
-# Periphery Bazel Driver
+# Periphery Bazel Rules
 
-Open-source Bazel integration for Periphery.
+Bazel integration for [Periphery](https://periphery.pro).
 
 ## Module Setup
 
-For released Periphery archives:
+Add `rules_periphery` to your `MODULE.bazel` and configure the Periphery
+binary to scan with. For a released Periphery archive:
 
 ```starlark
 bazel_dep(name = "rules_periphery", version = "0.0.0")
@@ -13,40 +14,117 @@ periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
 periphery.binary_archive(
     url = "https://example.com/periphery.zip",
     sha256 = "...",
-    binary_path = "periphery",
 )
-use_repo(periphery, "periphery_bin", "periphery_generated")
+use_repo(periphery, "periphery_generated")
 ```
 
-If you prefer to refer to the module as `@periphery`, alias it on your side with
-`repo_name` (works for any workspace that isn't itself the `periphery` module):
+Or, to use a Periphery binary from your local machine:
 
 ```starlark
-bazel_dep(name = "rules_periphery", version = "0.0.0", repo_name = "periphery")
-
-periphery = use_extension("@periphery//:extensions.bzl", "periphery")
-```
-
-For local development with an existing Periphery binary:
-
-```starlark
-bazel_dep(name = "rules_periphery", version = "0.0.0")
-local_path_override(
-    module_name = "rules_periphery",
-    path = "../bazel-driver",
-)
-
 periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
 periphery.local_binary(
-    path = "/absolute/path/to/periphery",
+    # Absolute, or relative to the workspace root.
+    path = "path/to/periphery",
 )
-use_repo(periphery, "periphery_bin", "periphery_generated")
 ```
 
-## Defining the scan target
+The configured binary is exposed to the scan rules as a toolchain; you don't
+need to reference it directly. `use_repo(periphery, "periphery_generated")` is
+only required when using the [scan target generation](#generating-the-scan-target)
+entry point.
 
-Define a target in your own `BUILD.bazel` using the `periphery` macro. You can
-name it whatever you like:
+## Declaring scan targets
+
+Three rules are provided:
+
+- `scan` — an executable target that prints results when run with `bazel run`.
+- `scan_test` — a test target that fails when unused code is found. Use this
+  to run Periphery in CI via `bazel test`.
+- `scan_report` — a build target that runs Periphery at build time and writes
+  the formatted report to a file output, which other rules can consume via
+  `data` deps or `srcs`.
+
+Apply them to your top-level targets (applications, tests, command-line
+tools, etc.); their transitive dependencies are scanned too:
+
+```starlark
+load("@rules_periphery//:rules.bzl", "scan", "scan_report", "scan_test")
+
+scan(
+    name = "scan",
+    config = ".periphery.yml",
+    deps = [
+        "//App:MyApp",
+        "//Tests:MyAppTests",
+    ],
+)
+
+scan_test(
+    name = "scan_test",
+    config = ".periphery.yml",
+    deps = [
+        "//App:MyApp",
+        "//Tests:MyAppTests",
+    ],
+)
+
+scan_report(
+    name = "scan_report",
+    config = ".periphery.yml",
+    format = "json",
+    deps = [
+        "//App:MyApp",
+        "//Tests:MyAppTests",
+    ],
+)
+```
+
+```sh
+# Print results.
+bazel run //:scan
+
+# Fail if unused code is found.
+bazel test //:scan_test
+
+# Write a report file to bazel-bin/scan_report.report.
+bazel build //:scan_report
+```
+
+All rules accept `periphery_args` for forwarding additional arguments to
+`periphery scan`. Files referenced by those arguments — such as a baseline —
+must be declared via the `data` attribute:
+
+```starlark
+scan_test(
+    name = "scan_test",
+    config = ".periphery.yml",
+    data = ["baseline.json"],
+    periphery_args = [
+        "--baseline",
+        "baseline.json",
+    ],
+    deps = ["//App:MyApp"],
+)
+```
+
+`scan_report`'s `format` accepts any of Periphery's output formats: `xcode`,
+`csv`, `json`, `checkstyle`, `codeclimate`, `github-actions`,
+`github-markdown`, `gitlab-codequality`.
+
+### License discovery
+
+`bazel run //:scan` locates your Periphery license through the project root,
+like any other invocation. `scan_test` runs from Bazel's test sandbox, so
+point it at your project with:
+
+```sh
+bazel test //:scan_test --test_env=PERIPHERY_LICENSE_STORE=/path/to/project
+```
+
+## Generating the scan target
+
+If you'd rather not maintain the `deps` list by hand, the `periphery` macro
+discovers your workspace's top-level targets automatically:
 
 ```starlark
 load("@rules_periphery//:defs.bzl", "periphery")
@@ -56,15 +134,13 @@ periphery(
 )
 ```
 
-Then Bazel is the entrypoint:
-
 ```sh
 bazel run //:periphery
 ```
 
-Running the target discovers your top-level targets, generates a hidden `scan`
-target, and invokes `periphery scan --generic-project-config` through a nested
-`bazel run @periphery_generated//:scan`.
+Running the target queries your workspace for top-level targets, generates a
+hidden `scan` target, and runs it through a nested `bazel run
+@periphery_generated//:scan`.
 
 The macro accepts optional configuration:
 
@@ -92,5 +168,19 @@ Additional arguments can also be forwarded to `periphery scan` at runtime:
 bazel run //:periphery -- --strict --quiet
 ```
 
-The underlying `tools/periphery-bazel` script can also be run directly (outside
-`bazel run`) from a workspace directory, which is useful for local development.
+The underlying `tools/periphery-bazel` script can also be run directly
+(outside `bazel run`) from a workspace directory, which is useful for local
+development.
+
+## Development
+
+```sh
+# Plumbing tests using a stub binary.
+./tests/smoke.sh
+
+# End-to-end tests using a real Periphery release binary (requires macOS).
+./tests/e2e.sh
+
+# Lint.
+mise run lint
+```
