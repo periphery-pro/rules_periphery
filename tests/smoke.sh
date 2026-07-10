@@ -40,6 +40,10 @@ echo "--- smoke: direct invocation of the driver script (local-dev workflow)"
 out="$("$REPO_ROOT/tools/periphery-bazel" --query "//:app" -- --quiet 2>&1)" || { echo "$out"; fail "direct invocation exited non-zero"; }
 assert_scan_command "direct invocation" "$out"
 
+echo "--- smoke: a periphery binary built from source, via periphery_toolchain"
+out="$(cd "$REPO_ROOT/tests/fixtures/local_target" && bazel run //:periphery 2>&1)" || { echo "$out"; fail "local_target fixture exited non-zero"; }
+assert_scan_command "local_target" "$out"
+
 echo "--- smoke: Bazel as the entrypoint via a consumer-defined periphery target"
 out="$(bazel run //:periphery 2>&1)" || { echo "$out"; fail "bazel run //:periphery exited non-zero"; }
 assert_scan_command "bazel run" "$out"

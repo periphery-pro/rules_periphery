@@ -228,7 +228,9 @@ def _scan_impl_common(ctx, is_test):
         template = ctx.file._template,
         output = scan_script,
         substitutions = {
-            "%periphery_path%": periphery.short_path,
+            # Always a relative path, so that a binary in the main repo, whose
+            # short path is a bare filename, is not looked up on PATH.
+            "%periphery_path%": "./" + periphery.short_path,
             "%config_path%": path_for(ctx.file.config) if ctx.file.config else "",
             "%project_config_path%": path_for(project_config_file),
             "%periphery_args%": " ".join([_shell_quote(arg) for arg in ctx.attr.periphery_args]),

@@ -5,6 +5,7 @@ exports_files([
     "defs.bzl",
     "extensions.bzl",
     "rules.bzl",
+    "toolchain.bzl",
 ])
 
 toolchain_type(

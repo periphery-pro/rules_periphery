@@ -1,0 +1,31 @@
+load("@rules_periphery//:defs.bzl", "periphery")
+load("@rules_periphery//:toolchain.bzl", "periphery_toolchain")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+# Stands in for a Periphery binary built from source in this workspace.
+sh_binary(
+    name = "periphery_from_source",
+    srcs = ["fake_periphery.sh"],
+)
+
+periphery_toolchain(
+    name = "periphery_binary",
+    binary = ":periphery_from_source",
+)
+
+toolchain(
+    name = "periphery_toolchain",
+    toolchain = ":periphery_binary",
+    toolchain_type = "@rules_periphery//:toolchain_type",
+)
+
+filegroup(
+    name = "app",
+    srcs = ["app.sh"],
+)
+
+periphery(
+    name = "periphery",
+    periphery_args = ["--quiet"],
+    query = "//:app",
+)
