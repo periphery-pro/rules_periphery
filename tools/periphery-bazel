@@ -1,173 +1,207 @@
-#!/usr/bin/env python3
-"""Run Periphery against a Bazel workspace through the generic project driver."""
+#!/usr/bin/env bash
+# Run Periphery against a Bazel workspace through the generic project driver.
+#
+# Discovers the workspace's top-level targets, generates a hidden `scan` target,
+# and invokes `periphery scan --generic-project-config` via a nested `bazel run`.
+#
+# Works both when invoked directly from a workspace and when invoked through
+# `bazel run @rules_periphery//:periphery -- ...`, in which case Bazel
+# sets BUILD_WORKSPACE_DIRECTORY.
 
-import argparse
-import json
-import os
-import pathlib
-import subprocess
-import sys
+set -euo pipefail
 
+OUTPUT_DIR="/var/tmp/periphery_bazel"
+GENERATED_BUILD="${OUTPUT_DIR}/BUILD.bazel"
 
-OUTPUT_DIR = pathlib.Path("/var/tmp/periphery_bazel")
-GENERATED_BUILD = OUTPUT_DIR / "BUILD.bazel"
-
-TOP_LEVEL_KINDS = [
+TOP_LEVEL_KINDS=(
     # rules_apple, iOS
-    "ios_app_clip",
-    "ios_application",
-    "ios_extension",
-    "ios_imessage_application",
-    "ios_imessage_extension",
-    "ios_sticker_pack_extension",
-    "ios_ui_test",
-    "ios_unit_test",
+    ios_app_clip
+    ios_application
+    ios_extension
+    ios_imessage_application
+    ios_imessage_extension
+    ios_sticker_pack_extension
+    ios_ui_test
+    ios_unit_test
     # rules_apple, tvOS
-    "tvos_application",
-    "tvos_extension",
-    "tvos_ui_test",
-    "tvos_unit_test",
+    tvos_application
+    tvos_extension
+    tvos_ui_test
+    tvos_unit_test
     # rules_apple, watchOS
-    "watchos_application",
-    "watchos_extension",
-    "watchos_ui_test",
-    "watchos_unit_test",
+    watchos_application
+    watchos_extension
+    watchos_ui_test
+    watchos_unit_test
     # rules_apple, visionOS
-    "visionos_application",
-    "visionos_ui_test",
-    "visionos_unit_test",
+    visionos_application
+    visionos_ui_test
+    visionos_unit_test
     # rules_apple, macOS
-    "macos_application",
-    "macos_command_line_application",
-    "macos_extension",
-    "macos_kernel_extension",
-    "macos_quick_look_plugin",
-    "macos_spotlight_importer",
-    "macos_xpc_service",
-    "macos_ui_test",
-    "macos_unit_test",
+    macos_application
+    macos_command_line_application
+    macos_extension
+    macos_kernel_extension
+    macos_quick_look_plugin
+    macos_spotlight_importer
+    macos_xpc_service
+    macos_ui_test
+    macos_unit_test
     # rules_swift
-    "swift_binary",
-    "swift_test",
-    "swift_compiler_plugin",
-]
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Generate and run a Periphery Bazel scan target.",
-        allow_abbrev=False,
-    )
-    parser.add_argument("--query", help="Bazel query for top-level targets to scan.")
-    parser.add_argument("--filter", help="Filter pattern applied to the default target query.")
-    parser.add_argument(
-        "--global-indexstore",
-        help="Path to a global index store populated by Bazel.",
-    )
-    parser.add_argument(
-        "--check-visibility",
-        action="store_true",
-        help="Enable Bazel visibility checking while running the generated scan target.",
-    )
-    parser.add_argument(
-        "--bazel-arg",
-        action="append",
-        default=[],
-        help="Additional argument passed to `bazel run`. May be repeated.",
-    )
-
-    args, periphery_args = parser.parse_known_args()
-    return args, [arg for arg in periphery_args if arg != "--"]
-
-
-def find_workspace_root(start):
-    path = pathlib.Path(start).resolve()
-    for candidate in [path, *path.parents]:
-        if (candidate / "MODULE.bazel").exists() or (candidate / "WORKSPACE").exists():
-            return candidate
-
-    raise SystemExit("error: current directory is not inside a Bazel workspace")
-
-
-def default_query(filter_pattern):
-    kinds = "|".join(TOP_LEVEL_KINDS)
-    query = f"filter('^//.*', kind('({kinds}) rule', deps(//...)))"
-    if filter_pattern:
-        return f"filter('{filter_pattern}', {query})"
-    return query
-
-
-def run_query(query, cwd):
-    result = subprocess.run(
-        ["bazel", "query", query],
-        cwd=cwd,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    if result.returncode != 0:
-        sys.stderr.write(result.stderr)
-        raise SystemExit(result.returncode)
-
-    return [line for line in result.stdout.splitlines() if line]
-
-
-def starlark_string(value):
-    return json.dumps(str(value))
-
-
-def write_generated_build(targets, args, periphery_args, workspace_root):
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-    deps = "\n".join(f"        {starlark_string(f'@@{target}')}," for target in targets)
-    global_indexstore = (
-        starlark_string(pathlib.Path(args.global_indexstore).expanduser().resolve())
-        if args.global_indexstore
-        else "None"
-    )
-    periphery_args_list = "\n".join(f"        {starlark_string(arg)}," for arg in periphery_args)
-
-    GENERATED_BUILD.write_text(
-        f"""load("@periphery_bazel_driver//:rules.bzl", "scan")
-
-scan(
-    name = "scan",
-    testonly = True,
-    periphery = "@periphery_bin//:periphery",
-    license_store = {starlark_string(workspace_root)},
-    global_indexstore = {global_indexstore},
-    periphery_args = [
-{periphery_args_list}
-    ],
-    deps = [
-{deps}
-    ],
+    swift_binary
+    swift_test
+    swift_compiler_plugin
 )
-""",
-        encoding="utf-8",
-    )
 
+usage() {
+    cat >&2 <<'EOF'
+Usage: periphery-bazel [options] [-- periphery scan args...]
 
-def run_scan(args, workspace_root):
-    command = [
-        "bazel",
-        "run",
-        f"--check_visibility={'true' if args.check_visibility else 'false'}",
-        "--ui_event_filters=-info,-debug,-warning",
-        *args.bazel_arg,
-        "@periphery_generated//:scan",
-    ]
-    return subprocess.run(command, cwd=workspace_root).returncode
+Options:
+  --query <expr>            Bazel query for top-level targets to scan.
+  --filter <pattern>        Filter pattern applied to the default target query.
+  --global-indexstore <p>   Path to a global index store populated by Bazel.
+  --check-visibility        Enable Bazel visibility checking for the scan target.
+  --bazel-arg <arg>         Extra argument passed to `bazel run`. May be repeated.
+  -h, --help                Show this help.
 
+Arguments after `--` (or any unrecognized arguments) are forwarded to
+`periphery scan`.
+EOF
+}
 
-def main():
-    args, periphery_args = parse_args()
-    workspace_root = find_workspace_root(os.getcwd())
-    query = args.query or default_query(args.filter)
-    targets = run_query(query, workspace_root)
-    write_generated_build(targets, args, periphery_args, workspace_root)
-    return run_scan(args, workspace_root)
+query=""
+filter=""
+global_indexstore=""
+check_visibility="false"
+bazel_args=()
+periphery_args=()
 
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --query) query="$2"; shift 2 ;;
+        --query=*) query="${1#*=}"; shift ;;
+        --filter) filter="$2"; shift 2 ;;
+        --filter=*) filter="${1#*=}"; shift ;;
+        --global-indexstore) global_indexstore="$2"; shift 2 ;;
+        --global-indexstore=*) global_indexstore="${1#*=}"; shift ;;
+        --check-visibility) check_visibility="true"; shift ;;
+        --bazel-arg) bazel_args+=("$2"); shift 2 ;;
+        --bazel-arg=*) bazel_args+=("${1#*=}"); shift ;;
+        -h|--help) usage; exit 0 ;;
+        --) shift; periphery_args+=("$@"); break ;;
+        *) periphery_args+=("$1"); shift ;;
+    esac
+done
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+# Fall back to environment configuration (used by the `periphery` macro), with
+# command-line arguments taking precedence.
+if [ -z "$query" ]; then query="${PERIPHERY_QUERY:-}"; fi
+if [ -z "$filter" ]; then filter="${PERIPHERY_FILTER:-}"; fi
+if [ -z "$global_indexstore" ]; then global_indexstore="${PERIPHERY_GLOBAL_INDEXSTORE:-}"; fi
+if [ "$check_visibility" != "true" ] && [ "${PERIPHERY_CHECK_VISIBILITY:-}" = "true" ]; then
+    check_visibility="true"
+fi
+
+find_workspace_root() {
+    if [ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]; then
+        printf '%s\n' "$BUILD_WORKSPACE_DIRECTORY"
+        return 0
+    fi
+
+    local dir
+    dir="$PWD"
+    while [ "$dir" != "/" ]; do
+        if [ -f "$dir/MODULE.bazel" ] || [ -f "$dir/WORKSPACE" ] || [ -f "$dir/WORKSPACE.bazel" ]; then
+            printf '%s\n' "$dir"
+            return 0
+        fi
+        dir="$(dirname "$dir")"
+    done
+
+    echo "error: not inside a Bazel workspace (no MODULE.bazel or WORKSPACE found)" >&2
+    return 1
+}
+
+abs_path() {
+    local target="$1"
+    if [ -d "$target" ]; then
+        (cd "$target" && pwd)
+    else
+        local dir base
+        dir="$(dirname "$target")"
+        base="$(basename "$target")"
+        (cd "$dir" && printf '%s/%s\n' "$(pwd)" "$base")
+    fi
+}
+
+starlark_string() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    printf '"%s"' "$s"
+}
+
+default_query() {
+    local kinds
+    kinds="$(IFS='|'; printf '%s' "${TOP_LEVEL_KINDS[*]}")"
+    local base="filter('^//.*', kind('(${kinds}) rule', deps(//...)))"
+    if [ -n "$filter" ]; then
+        printf "filter('%s', %s)" "$filter" "$base"
+    else
+        printf '%s' "$base"
+    fi
+}
+
+workspace_root="$(find_workspace_root)"
+
+if [ -z "$query" ]; then
+    query="$(default_query)"
+fi
+
+query_output="$(cd "$workspace_root" && bazel query "$query")"
+
+targets=()
+while IFS= read -r line; do
+    [ -n "$line" ] && targets+=("$line")
+done <<EOF
+$query_output
+EOF
+
+mkdir -p "$OUTPUT_DIR"
+
+{
+    printf 'load("@rules_periphery//:rules.bzl", "scan")\n\n'
+    printf 'scan(\n'
+    printf '    name = "scan",\n'
+    printf '    testonly = True,\n'
+    printf '    periphery = "@periphery_bin//:periphery",\n'
+    printf '    license_store = %s,\n' "$(starlark_string "$workspace_root")"
+    if [ -n "$global_indexstore" ]; then
+        printf '    global_indexstore = %s,\n' "$(starlark_string "$(abs_path "$global_indexstore")")"
+    else
+        printf '    global_indexstore = None,\n'
+    fi
+    printf '    periphery_args = [\n'
+    if [ ${#periphery_args[@]} -gt 0 ]; then
+        for arg in "${periphery_args[@]}"; do
+            printf '        %s,\n' "$(starlark_string "$arg")"
+        done
+    fi
+    printf '    ],\n'
+    printf '    deps = [\n'
+    if [ ${#targets[@]} -gt 0 ]; then
+        for target in "${targets[@]}"; do
+            printf '        %s,\n' "$(starlark_string "@@${target}")"
+        done
+    fi
+    printf '    ],\n'
+    printf ')\n'
+} >"$GENERATED_BUILD"
+
+cd "$workspace_root"
+exec bazel run \
+    "--check_visibility=${check_visibility}" \
+    "--ui_event_filters=-info,-debug,-warning" \
+    "${bazel_args[@]+"${bazel_args[@]}"}" \
+    @periphery_generated//:scan

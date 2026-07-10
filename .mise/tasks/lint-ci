@@ -1,0 +1,8 @@
+#!/bin/bash
+#MISE description="Run Buildifier lint checks in CI mode"
+
+set -euo pipefail
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+bazel run //:buildifier.check

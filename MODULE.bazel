@@ -1,8 +1,12 @@
 module(
-    name = "periphery_bazel_driver",
+    name = "rules_periphery",
     version = "0.0.0",
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "rules_apple", version = "4.5.2")
+bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "rules_swift", version = "3.6.0", max_compatibility_level = 3)
+
+# Dev dependencies
+bazel_dep(name = "buildifier_prebuilt", version = "8.2.1.1", dev_dependency = True)

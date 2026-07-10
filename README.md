@@ -7,9 +7,9 @@ Open-source Bazel integration for Periphery.
 For released Periphery archives:
 
 ```starlark
-bazel_dep(name = "periphery_bazel_driver", version = "0.0.0")
+bazel_dep(name = "rules_periphery", version = "0.0.0")
 
-periphery = use_extension("@periphery_bazel_driver//:extensions.bzl", "periphery")
+periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
 periphery.binary_archive(
     url = "https://example.com/periphery.zip",
     sha256 = "...",
@@ -18,36 +18,79 @@ periphery.binary_archive(
 use_repo(periphery, "periphery_bin", "periphery_generated")
 ```
 
+If you prefer to refer to the module as `@periphery`, alias it on your side with
+`repo_name` (works for any workspace that isn't itself the `periphery` module):
+
+```starlark
+bazel_dep(name = "rules_periphery", version = "0.0.0", repo_name = "periphery")
+
+periphery = use_extension("@periphery//:extensions.bzl", "periphery")
+```
+
 For local development with an existing Periphery binary:
 
 ```starlark
-bazel_dep(name = "periphery_bazel_driver", version = "0.0.0")
+bazel_dep(name = "rules_periphery", version = "0.0.0")
 local_path_override(
-    module_name = "periphery_bazel_driver",
+    module_name = "rules_periphery",
     path = "../bazel-driver",
 )
 
-periphery = use_extension("@periphery_bazel_driver//:extensions.bzl", "periphery")
+periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
 periphery.local_binary(
     path = "/absolute/path/to/periphery",
 )
 use_repo(periphery, "periphery_bin", "periphery_generated")
 ```
 
-## Running
+## Defining the scan target
 
-Run the driver from your Bazel workspace:
+Define a target in your own `BUILD.bazel` using the `periphery` macro. You can
+name it whatever you like:
 
-```sh
-periphery-bazel -- --config .periphery.yml
+```starlark
+load("@rules_periphery//:defs.bzl", "periphery")
+
+periphery(
+    name = "periphery",
+)
 ```
 
-Useful driver options:
+Then Bazel is the entrypoint:
 
-- `--query <expr>` overrides the default top-level target query.
-- `--filter <pattern>` filters the default top-level target query.
-- `--global-indexstore <path>` uses a global index store instead of module index stores.
-- `--check-visibility` runs Bazel with visibility checking enabled.
-- `--bazel-arg <arg>` forwards an argument to `bazel run`.
+```sh
+bazel run //:periphery
+```
 
-Arguments not recognized by the driver are forwarded to `periphery scan`.
+Running the target discovers your top-level targets, generates a hidden `scan`
+target, and invokes `periphery scan --generic-project-config` through a nested
+`bazel run @periphery_generated//:scan`.
+
+The macro accepts optional configuration:
+
+```starlark
+periphery(
+    name = "periphery",
+    # Override the default top-level target query.
+    query = "filter('^//App', kind('(ios_application) rule', deps(//...)))",
+    # Or just filter the default query.
+    filter = "^//App",
+    # Use a global index store instead of per-module stores.
+    global_indexstore = "/path/to/indexstore",
+    # Run the scan with Bazel visibility checking enabled.
+    check_visibility = False,
+    # Extra arguments forwarded to the nested `bazel run`.
+    bazel_args = [],
+    # Arguments forwarded to `periphery scan`.
+    periphery_args = ["--config", ".periphery.yml"],
+)
+```
+
+Additional arguments can also be forwarded to `periphery scan` at runtime:
+
+```sh
+bazel run //:periphery -- --strict --quiet
+```
+
+The underlying `tools/periphery-bazel` script can also be run directly (outside
+`bazel run`) from a workspace directory, which is useful for local development.

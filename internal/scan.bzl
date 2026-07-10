@@ -6,6 +6,8 @@ load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@rules_apple//apple:providers.bzl", "AppleResourceInfo")
 load("@rules_swift//swift:providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
 
+visibility("//...")
+
 PeripheryInfo = provider(
     doc = "Provides inputs needed to generate a generic project configuration file.",
     fields = {

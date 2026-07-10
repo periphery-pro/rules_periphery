@@ -1,0 +1,4 @@
+exports_files(
+    ["periphery-bazel"],
+    visibility = ["//visibility:public"],
+)

@@ -2,7 +2,7 @@
 Public Periphery Bazel rules.
 """
 
-load("//bazel/internal/scan:scan.bzl", "force_indexstore", "scan_impl", "scan_inputs_aspect")
+load("//internal:scan.bzl", "force_indexstore", "scan_impl", "scan_inputs_aspect")
 
 scan = rule(
     doc = "Scans the top-level deps and their transitive deps for unused code.",
@@ -24,7 +24,7 @@ scan = rule(
         ),
         "_template": attr.label(
             allow_single_file = True,
-            default = "@periphery_bazel_driver//bazel/internal/scan:scan_template.sh",
+            default = "@rules_periphery//internal:scan_template.sh",
         ),
     },
     outputs = {
