@@ -160,10 +160,6 @@ Additional arguments can also be forwarded to `periphery scan` at runtime:
 bazel run //:periphery -- --strict --quiet
 ```
 
-The underlying `tools/periphery-bazel` script can also be run directly
-(outside `bazel run`) from a workspace directory, which is useful for local
-development.
-
 ### Visibility checking
 
 By default the generated scan target is built with `--check_visibility=false`,
