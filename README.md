@@ -29,28 +29,6 @@ periphery.local_binary(
 ```
 
 `local_binary` refers to a path on disk, which Bazel neither builds nor tracks.
-If Periphery is built from source in your workspace, point the toolchain at the
-target instead, so it is built and tracked like any other input:
-
-```starlark
-load("@rules_periphery//:toolchain.bzl", "periphery_toolchain")
-
-periphery_toolchain(
-    name = "periphery_binary",
-    binary = "//path/to:periphery",
-)
-
-toolchain(
-    name = "periphery_toolchain",
-    toolchain = ":periphery_binary",
-    toolchain_type = "@rules_periphery//:toolchain_type",
-)
-```
-
-```starlark
-# MODULE.bazel. No binary needs to be configured on the extension.
-register_toolchains("//:periphery_toolchain")
-```
 
 The configured binary is exposed to the scan rules as a toolchain; you don't
 need to reference it directly. `use_repo(periphery, "periphery_generated")` is
