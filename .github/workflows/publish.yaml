@@ -40,7 +40,7 @@ jobs:
     uses: bazel-contrib/publish-to-bcr/.github/workflows/publish.yaml@v1.4.2
     with:
       tag_name: ${{ github.event.release.tag_name }}
-      registry_fork: ileitch/bazel-central-registry
+      registry_fork: periphery-pro/bazel-central-registry
       # We upload our own archive rather than using the bazel-contrib release
       # workflow, so there is nothing to attest.
       attest: false
