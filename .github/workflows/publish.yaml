@@ -1,0 +1,48 @@
+name: Publish to BCR
+
+# Publishing is driven by GitHub releases. Tag and release with a bare semver
+# (e.g. "0.1.0", no leading "v") so the archive prefix and the module version
+# match what .bcr/source.template.json expects.
+on:
+  release:
+    types: [published]
+
+jobs:
+  # Attach a reproducible source archive named rules_periphery-<tag>.tar.gz to
+  # the release. publish-to-bcr hashes this exact asset for source.json, so it
+  # must exist before that job runs.
+  archive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+      - name: Build and upload release archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          prefix="rules_periphery-${TAG}"
+          # gzip -n omits the timestamp so the archive is byte-stable per tag.
+          git archive --prefix="${prefix}/" --format=tar HEAD | gzip -n > "${prefix}.tar.gz"
+          shasum -a 256 "${prefix}.tar.gz"
+          gh release upload "${TAG}" "${prefix}.tar.gz" --clobber
+
+  publish:
+    needs: archive
+    permissions:
+      id-token: write
+      attestations: write
+      contents: write
+    uses: bazel-contrib/publish-to-bcr/.github/workflows/publish.yaml@v1.4.2
+    with:
+      tag_name: ${{ github.event.release.tag_name }}
+      registry_fork: ileitch/bazel-central-registry
+      # We upload our own archive rather than using the bazel-contrib release
+      # workflow, so there is nothing to attest.
+      attest: false
+    secrets:
+      publish_token: ${{ secrets.BCR_PUBLISH_TOKEN }}

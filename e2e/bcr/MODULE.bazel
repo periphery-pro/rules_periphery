@@ -1,0 +1,9 @@
+module(name = "rules_periphery_e2e")
+
+bazel_dep(name = "rules_periphery", version = "0.1.0")
+
+# A stand-in Periphery binary. Building the scan target never executes it, so a
+# fake keeps this check free of a network download and a Swift toolchain.
+periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
+periphery.local_binary(path = "fake_periphery.sh")
+use_repo(periphery, "periphery_generated")
