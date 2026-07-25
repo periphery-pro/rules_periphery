@@ -7,7 +7,7 @@ bcr_test_module:
   module_path: "e2e/bcr"
   matrix:
     platform: ["ubuntu2204", "macos"]
-    bazel: ["8.x"]
+    bazel: ["8.x", "9.x"]
   tasks:
     build_targets:
       name: "Build the test module"
