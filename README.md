@@ -1,6 +1,6 @@
 # Periphery Bazel Rules
 
-Bazel integration for [Periphery](https://github.com/peripheryapp/periphery).
+Bazel integration for [Periphery](https://periphery.pro).
 
 ## Module Setup
 
