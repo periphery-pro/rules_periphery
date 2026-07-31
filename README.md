@@ -8,12 +8,15 @@ Add `rules_periphery` to your `MODULE.bazel` and configure the Periphery
 binary to scan with. For a released Periphery archive:
 
 ```starlark
-bazel_dep(name = "rules_periphery", version = "0.0.0")
+PERIPHERY_VERSION = "1.0.0.beta.2"
+
+bazel_dep(name = "rules_periphery", version = "0.1.0")
 
 periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
 periphery.binary_archive(
-    url = "https://example.com/periphery.zip",
-    sha256 = "...",
+    # This example uses the macOS Apple Silicon archive.
+    url = "https://github.com/periphery-pro/cli-releases/releases/download/{0}/periphery-cli_{0}_macos_arm64.zip".format(PERIPHERY_VERSION),
+    sha256 = "48b574a6f5c868e8a3e07e3f5afdab39734c3624b23fc84f2380e58c0a837cfd",
 )
 use_repo(periphery, "periphery_generated")
 ```
