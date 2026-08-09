@@ -1,4 +1,4 @@
-load("@rules_periphery//:defs.bzl", "periphery")
+load("@rules_periphery//:defs.bzl", "scan_auto")
 load("@rules_periphery//:rules.bzl", "scan", "scan_report", "scan_test")
 load("@rules_swift//swift:swift_binary.bzl", "swift_binary")
 
@@ -18,15 +18,15 @@ swift_binary(
 )
 
 # Auto-discovery entry point; scans all top-level targets in the workspace.
-periphery(
-    name = "periphery",
+scan_auto(
+    name = "scan_auto",
     periphery_args = ["--disable-update-check"],
 )
 
 # As above, but with Bazel visibility checking enabled. The scanned targets
 # grant visibility to the generated scan target via `@rules_periphery//:generated`.
-periphery(
-    name = "periphery_checked",
+scan_auto(
+    name = "scan_auto_checked",
     check_visibility = True,
     periphery_args = ["--disable-update-check"],
 )

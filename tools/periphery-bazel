@@ -5,7 +5,7 @@
 # and invokes `periphery scan --generic-project-config` via a nested `bazel run`.
 #
 # Works both when invoked directly from a workspace and when invoked through
-# `bazel run @rules_periphery//:periphery -- ...`, in which case Bazel
+# `bazel run //:scan_auto -- ...`, in which case Bazel
 # sets BUILD_WORKSPACE_DIRECTORY.
 
 set -euo pipefail
@@ -93,7 +93,7 @@ done
 
 # Fall back to environment configuration, with command-line arguments taking
 # precedence. The `__`-prefixed variables are internal transport from the
-# `periphery` macro, not an interface to set directly.
+# `scan_auto` macro, not an interface to set directly.
 if [ -z "$query" ]; then query="${__PERIPHERY_QUERY:-}"; fi
 if [ -z "$filter" ]; then filter="${__PERIPHERY_FILTER:-}"; fi
 if [ -z "$global_indexstore" ]; then global_indexstore="${__PERIPHERY_GLOBAL_INDEXSTORE:-}"; fi

@@ -11,7 +11,7 @@ def _quote(arg):
     # arguments arrive at the binary exactly as written.
     return shell.quote(arg.replace("$", "$$"))
 
-def periphery(
+def scan_auto(
         name,
         query = None,
         filter = None,
@@ -27,7 +27,7 @@ def periphery(
     `periphery scan --generic-project-config` through a nested `bazel run`.
 
     Args:
-        name: The target name. Choose anything you like, e.g. "periphery".
+        name: The target name. Choose anything you like, e.g. "scan_auto".
         query: Overrides the default top-level target query.
         filter: Filter pattern applied to the default top-level target query.
         global_indexstore: Path to a global index store populated by Bazel.

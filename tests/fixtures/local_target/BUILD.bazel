@@ -1,4 +1,4 @@
-load("@rules_periphery//:defs.bzl", "periphery")
+load("@rules_periphery//:defs.bzl", "scan_auto")
 load("@rules_periphery//:toolchain.bzl", "periphery_toolchain")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
@@ -24,8 +24,8 @@ filegroup(
     srcs = ["app.sh"],
 )
 
-periphery(
-    name = "periphery",
+scan_auto(
+    name = "scan_auto",
     periphery_args = ["--quiet"],
     query = "//:app",
 )

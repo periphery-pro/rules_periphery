@@ -118,19 +118,19 @@ scan_test(
 
 ## Generating the scan target
 
-If you'd rather not maintain the `deps` list by hand, the `periphery` macro
+If you'd rather not maintain the `deps` list by hand, the `scan_auto` macro
 discovers your workspace's top-level targets automatically:
 
 ```starlark
-load("@rules_periphery//:defs.bzl", "periphery")
+load("@rules_periphery//:defs.bzl", "scan_auto")
 
-periphery(
-    name = "periphery",
+scan_auto(
+    name = "scan_auto",
 )
 ```
 
 ```sh
-bazel run //:periphery
+bazel run //:scan_auto
 ```
 
 Running the target queries your workspace for top-level targets, generates a
@@ -140,8 +140,8 @@ hidden `scan` target, and runs it through a nested `bazel run
 The macro accepts optional configuration:
 
 ```starlark
-periphery(
-    name = "periphery",
+scan_auto(
+    name = "scan_auto",
     # Override the default top-level target query.
     query = "filter('^//App', kind('(ios_application) rule', deps(//...)))",
     # Or just filter the default query.
@@ -160,7 +160,7 @@ periphery(
 Additional arguments can also be forwarded to `periphery scan` at runtime:
 
 ```sh
-bazel run //:periphery -- --strict --quiet
+bazel run //:scan_auto -- --strict --quiet
 ```
 
 ### Visibility checking
