@@ -1,12 +1,12 @@
-load("@rules_periphery//:defs.bzl", "periphery")
+load("@rules_periphery//:defs.bzl", "scan_auto")
 
 filegroup(
     name = "app",
     srcs = ["app.sh"],
 )
 
-periphery(
-    name = "periphery",
+scan_auto(
+    name = "scan_auto",
     periphery_args = [
         "--quiet",
         "--report-exclude",
