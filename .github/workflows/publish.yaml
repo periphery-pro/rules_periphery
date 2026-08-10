@@ -26,8 +26,14 @@ jobs:
         run: |
           set -euo pipefail
           prefix="rules_periphery-${TAG}"
+          # The BCR test module is shipped in this archive. Point it at the
+          # version being released so each BCR presubmit tests the new module,
+          # rather than whichever version was last committed to the fixture.
+          perl -pi -e 's{(bazel_dep\(name = "rules_periphery", version = ")[^"]+("\))}{$1 . $ENV{TAG} . $2}e' e2e/bcr/MODULE.bazel
+          grep -F "bazel_dep(name = \"rules_periphery\", version = \"${TAG}\")" e2e/bcr/MODULE.bazel
+          git add e2e/bcr/MODULE.bazel
           # gzip -n omits the timestamp so the archive is byte-stable per tag.
-          git archive --prefix="${prefix}/" --format=tar HEAD | gzip -n > "${prefix}.tar.gz"
+          git archive --prefix="${prefix}/" --format=tar "$(git write-tree)" | gzip -n > "${prefix}.tar.gz"
           shasum -a 256 "${prefix}.tar.gz"
           gh release upload "${TAG}" "${prefix}.tar.gz" --clobber
 
