@@ -9,8 +9,16 @@ local_path_override(
 bazel_dep(name = "rules_swift", version = "3.6.0")
 
 periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
-periphery.binary_archive(
-    sha256 = "f8283239a82c638a4d5cfb91c42519980462b7853299562f663eb33ce54c8dc6",
-    url = "https://github.com/peripheryapp/periphery/releases/download/3.7.4/periphery-3.7.4.zip",
+periphery.release(
+    # No periphery-pro release exists yet, so the release flow is exercised
+    # against the open-source archive, whose asset name has no platform
+    # components. The binary is universal, hence one checksum for both
+    # macOS architectures.
+    sha256 = {
+        "macos_arm64": "f8283239a82c638a4d5cfb91c42519980462b7853299562f663eb33ce54c8dc6",
+        "macos_x86_64": "f8283239a82c638a4d5cfb91c42519980462b7853299562f663eb33ce54c8dc6",
+    },
+    url_template = "https://github.com/peripheryapp/periphery/releases/download/{version}/periphery-{version}.zip",
+    version = "3.7.4",
 )
 use_repo(periphery, "periphery_generated")
