@@ -40,7 +40,7 @@ entry point.
 
 ## Declaring scan targets
 
-Three rules are provided:
+Three rules and one convenience macro are provided:
 
 - `scan` — an executable target that prints results when run with `bazel run`.
 - `scan_test` — a test target that fails when unused code is found. Use this
@@ -48,9 +48,11 @@ Three rules are provided:
 - `scan_report` — a build target that runs Periphery at build time and writes
   the formatted report to a file output, which other rules can consume via
   `data` deps or `srcs`.
+- `scan_auto` — an executable target that discovers the workspace's top-level
+  targets automatically, so you don't need to maintain a `deps` list by hand.
 
-Apply them to your top-level targets (applications, tests, command-line
-tools, etc.); their transitive dependencies are scanned too:
+Apply the explicit scan rules to your top-level targets (applications, tests,
+command-line tools, etc.); their transitive dependencies are scanned too:
 
 ```starlark
 load("@rules_periphery//:rules.bzl", "scan", "scan_report", "scan_test")
