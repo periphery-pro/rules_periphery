@@ -5,7 +5,9 @@ Bazel integration for [Periphery](https://periphery.pro).
 ## Module Setup
 
 Add `rules_periphery` to your `MODULE.bazel` and configure the Periphery
-binary to scan with. For a released Periphery archive:
+binary to scan with. For a Periphery release, name its version; the archive
+for the host platform is downloaded and verified against checksums shipped
+with this ruleset:
 
 ```starlark
 PERIPHERY_VERSION = "1.0.0"
@@ -13,12 +15,33 @@ PERIPHERY_VERSION = "1.0.0"
 bazel_dep(name = "rules_periphery", version = PERIPHERY_VERSION)
 
 periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
+periphery.release(version = "1.0.0")
+use_repo(periphery, "periphery_generated")
+```
+
+Versions this ruleset doesn't know yet can be used by supplying their
+checksums (found alongside each release):
+
+```starlark
+periphery.release(
+    version = "1.1.0",
+    sha256 = {
+        "linux_arm64": "...",
+        "linux_x86_64": "...",
+        "macos_arm64": "...",
+        "macos_x86_64": "...",
+    },
+)
+```
+
+To use an archive that isn't an official release:
+
+```starlark
 periphery.binary_archive(
     # This example uses the macOS Apple Silicon archive.
     url = "https://github.com/periphery-pro/cli-releases/releases/download/{0}/periphery-cli_{0}_macos_arm64.zip".format(PERIPHERY_VERSION),
     sha256 = "...",
 )
-use_repo(periphery, "periphery_generated")
 ```
 
 Or, to use a Periphery binary from your local machine:
