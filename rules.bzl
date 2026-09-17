@@ -2,6 +2,7 @@
 Public Periphery Bazel rules.
 """
 
+load("@platforms//host:constraints.bzl", "HOST_CONSTRAINTS")
 load(
     "//internal:scan.bzl",
     "TOOLCHAIN_TYPE",
@@ -41,6 +42,10 @@ scan = rule(
     },
     implementation = scan_impl,
     executable = True,
+    # `bazel run` launches the scanner on the local host, even when scanned
+    # targets compile remotely. Restrict this rule's toolchain resolution only;
+    # deps, scan_test, and scan_report retain their execution platforms.
+    exec_compatible_with = HOST_CONSTRAINTS,
     toolchains = [TOOLCHAIN_TYPE],
 )
 

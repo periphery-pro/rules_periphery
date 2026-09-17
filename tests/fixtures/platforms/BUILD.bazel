@@ -1,0 +1,51 @@
+load("@rules_periphery//:defs.bzl", "scan_auto")
+load("@rules_periphery//:rules.bzl", "scan", "scan_report", "scan_test")
+load("@rules_periphery//:toolchain.bzl", "periphery_toolchain")
+load(":fixture.bzl", "compile_toolchain", "indexed_target", "platforms", "scanner")
+
+platforms(name = "other")
+
+scanner(name = "scanner")
+
+periphery_toolchain(
+    name = "periphery_binary",
+    binary = ":scanner",
+)
+
+toolchain(
+    name = "periphery_toolchain",
+    toolchain = ":periphery_binary",
+    toolchain_type = "@rules_periphery//:toolchain_type",
+)
+
+toolchain_type(name = "compile_toolchain_type")
+
+compile_toolchain(name = "compiler")
+
+toolchain(
+    name = "compile_toolchain",
+    toolchain = ":compiler",
+    toolchain_type = ":compile_toolchain_type",
+)
+
+indexed_target(name = "app")
+
+scan(
+    name = "scan",
+    deps = [":app"],
+)
+
+scan_auto(
+    name = "auto",
+    query = "//:app",
+)
+
+scan_test(
+    name = "scan_test",
+    deps = [":app"],
+)
+
+scan_report(
+    name = "report",
+    deps = [":app"],
+)

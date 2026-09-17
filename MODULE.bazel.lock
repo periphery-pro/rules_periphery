@@ -204,7 +204,7 @@
     "//:extensions.bzl%periphery": {
       "general": {
         "bzlTransitiveDigest": "SelCXQMOIQBKKyP93sWoWd+o0qRKR6W9v3yR5jkpxnA=",
-        "usagesDigest": "aXT/taYbNC2Jyqw6JutB6fJ2DRrTAzB6ZIL+EfVE2p4=",
+        "usagesDigest": "edakbWmeCTJU224+3BybJaSaGdInrZqPf40Xvr4FVxw=",
         "recordedInputs": [],
         "generatedRepoSpecs": {
           "periphery_bin": {

@@ -1,0 +1,15 @@
+module(name = "rules_periphery_platforms_test")
+
+bazel_dep(name = "rules_periphery", version = "0.0.0")
+local_path_override(
+    module_name = "rules_periphery",
+    path = "../../..",
+)
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_swift", version = "3.6.0")
+
+register_toolchains("//:periphery_toolchain", "//:compile_toolchain")
+
+periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
+use_repo(periphery, "periphery_generated")
