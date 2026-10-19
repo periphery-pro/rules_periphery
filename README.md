@@ -38,6 +38,26 @@ need to reference it directly. `use_repo(periphery, "periphery_generated")` is
 only required when using the [scan target generation](#generating-the-scan-target)
 entry point.
 
+## Signing in
+
+Periphery requires an account to scan. To sign in with the configured binary,
+without installing Periphery separately, add `periphery_bin` to `use_repo`:
+
+```starlark
+use_repo(periphery, "periphery_bin", "periphery_generated")
+```
+
+Then run:
+
+```sh
+bazel run @periphery_bin//:periphery -- auth login
+```
+
+Sign-in completes in your browser, and scans run with `bazel run` use the
+stored credential. For CI, provide an access token through `PERIPHERY_TOKEN`
+instead. See
+[Authentication](https://periphery.pro/docs/authentication).
+
 ## Declaring scan targets
 
 Three rules and one convenience macro are provided:
