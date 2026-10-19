@@ -5,12 +5,17 @@ Bazel integration for [Periphery](https://periphery.pro).
 ## Module Setup
 
 Add `rules_periphery` to your `MODULE.bazel` and configure the Periphery
-binary to scan with. For a released Periphery archive:
+binary to scan with. These rules and the Periphery CLI are versioned
+separately: use the latest `rules_periphery` version from the
+[Bazel Central Registry](https://registry.bazel.build/modules/rules_periphery),
+and the latest CLI release from
+[cli-releases](https://github.com/periphery-pro/cli-releases/releases).
+For a released Periphery archive:
 
 ```starlark
-PERIPHERY_VERSION = "1.0.0"
+bazel_dep(name = "rules_periphery", version = "0.2.1")
 
-bazel_dep(name = "rules_periphery", version = PERIPHERY_VERSION)
+PERIPHERY_VERSION = "1.0.0.beta.8"
 
 periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
 periphery.binary_archive(
