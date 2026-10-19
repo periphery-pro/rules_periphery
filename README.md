@@ -13,14 +13,12 @@ and the latest CLI release from
 For a released Periphery archive:
 
 ```starlark
-bazel_dep(name = "rules_periphery", version = "0.2.1")
-
-PERIPHERY_VERSION = "1.0.0.beta.8"
+bazel_dep(name = "rules_periphery", version = "<rules_version>")
 
 periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")
 periphery.binary_archive(
     # This example uses the macOS Apple Silicon archive.
-    url = "https://github.com/periphery-pro/cli-releases/releases/download/{0}/periphery-cli_{0}_macos_arm64.zip".format(PERIPHERY_VERSION),
+    url = "https://github.com/periphery-pro/cli-releases/releases/download/<cli_version>/periphery-cli_<cli_version>_macos_arm64.zip",
     sha256 = "...",
 )
 use_repo(periphery, "periphery_generated")
