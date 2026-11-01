@@ -42,24 +42,24 @@ report="$(bazel cquery --output=files //:app_report 2>/dev/null | head -1)"
 [ -s "$report" ] || fail "report file is missing or empty"
 grep -q "UnusedSymbol" "$report" || { cat "$report"; fail "expected UnusedSymbol in report"; }
 
-assert_embedded_findings() {
+assert_apple_findings() {
     local context="$1" out="$2"
-    for symbol in unusedFrameworkFunction unusedServiceFunction; do
+    for symbol in unusedFrameworkFunction unusedServiceFunction unusedPrivateFunction unusedPrivateSupportFunction; do
         grep -q "$symbol" <<<"$out" || { echo "$out"; fail "$context: expected $symbol"; }
     done
 }
 
-echo "--- e2e: app-only scan includes embedded frameworks and XPC services"
+echo "--- e2e: app-only scan includes embedded targets and private dependencies"
 out="$(bazel run //apple:scan 2>&1)" || { echo "$out"; fail "app-only scan exited non-zero"; }
-assert_embedded_findings "app-only scan" "$out"
+assert_apple_findings "app-only scan" "$out"
 
-echo "--- e2e: app-only scan_test fails with findings from both embedded targets"
+echo "--- e2e: app-only scan_test fails with embedded-target and private-dependency findings"
 if out="$(bazel test //apple:scan_test --test_output=all 2>&1)"; then
     fail "app-only scan_test should fail"
 fi
-assert_embedded_findings "app-only scan_test" "$out"
+assert_apple_findings "app-only scan_test" "$out"
 
-echo "--- e2e: app-only scan_report includes both embedded targets in its sandbox"
+echo "--- e2e: app-only scan_report includes embedded targets and private dependencies in its sandbox"
 bazel build //apple:report || fail "building //apple:report failed"
 report="$(bazel cquery --output=files //apple:report 2>/dev/null | head -1)"
 [ -s "$report" ] || fail "app-only report file is missing or empty"
@@ -69,9 +69,16 @@ import sys
 
 with open(sys.argv[1]) as report:
     names = sorted(finding["name"] for finding in json.load(report))
-expected = ["unusedFrameworkFunction()", "unusedServiceFunction()"]
+# Exact findings also prove the calls through both private dependency edges
+# retain privateGreeting() and supportGreeting().
+expected = [
+    "unusedFrameworkFunction()",
+    "unusedPrivateFunction()",
+    "unusedPrivateSupportFunction()",
+    "unusedServiceFunction()",
+]
 if names != expected:
-    raise SystemExit(f"Expected only embedded-target findings {expected}, got {names}")
+    raise SystemExit(f"Expected only embedded-target and private-dependency findings {expected}, got {names}")
 PY
 
 echo "e2e: all tests passed"

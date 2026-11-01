@@ -7,6 +7,18 @@ package(default_visibility = ["@rules_periphery//:generated"])
 swift_library(
     name = "app_sources",
     srcs = ["main.swift"],
+    private_deps = [":private_sources"],
+)
+
+swift_library(
+    name = "private_sources",
+    srcs = ["Private.swift"],
+    private_deps = [":private_support_sources"],
+)
+
+swift_library(
+    name = "private_support_sources",
+    srcs = ["PrivateSupport.swift"],
 )
 
 swift_library(
@@ -46,7 +58,7 @@ macos_application(
 )
 
 # Select only the app: selecting the Swift libraries directly would mask
-# missing traversal of the frameworks and xpc_services attributes.
+# missing traversal of the frameworks, xpc_services, and private_deps attributes.
 scan(
     name = "scan",
     deps = [":app"],

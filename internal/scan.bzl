@@ -34,6 +34,7 @@ _TRANSITIVE_ATTRS = [
     "extensions",
     "frameworks",
     "plugins",
+    "private_deps",
     "swift_target",
     "watch_application",
     "xpc_services",
