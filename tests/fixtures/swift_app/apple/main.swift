@@ -1,1 +1,3 @@
-print("App with an embedded framework and XPC service")
+@_implementationOnly import apple_private_sources
+
+print(privateGreeting())
