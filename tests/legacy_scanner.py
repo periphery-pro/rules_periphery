@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the directory-based Core Data interface expected by older CLIs."""
+"""Check resource inputs and the Core Data interface expected by older CLIs."""
 
 import json
 import os
@@ -34,7 +34,23 @@ for directory in mappings:
     references.update(node.text for node in model.iter() if node.attrib.get("name") == "migrationpolicyclassname")
 assert references == {"CustomTransformer", "CustomMigrationPolicy"}, references
 
-result = "Legacy Core Data directory inputs parsed successfully\n"
+xibs = [Path(path) for path in config["xibs"]]
+assert len(xibs) == len(set(xibs)) == 5, xibs
+interface_classes = {
+    node.attrib["customClass"]
+    for path in xibs
+    for node in ET.parse(path).iter()
+    if "customClass" in node.attrib
+}
+assert interface_classes == {
+    "Views_First_xib",
+    "Views_Second_xib",
+    "Other_Third_xib",
+    "Base_lproj_Main_storyboard",
+    "fr_lproj_Main_storyboard",
+}, interface_classes
+
+result = "Core Data and Interface Builder resource inputs parsed successfully\n"
 if "--write-results" in args:
     Path(args[args.index("--write-results") + 1]).write_text(result)
 else:
