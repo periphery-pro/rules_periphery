@@ -1,22 +1,38 @@
-load(":scan_inputs_tests.bzl", "core_data_inputs_test", "model_resources")
+load("//:rules.bzl", "scan", "scan_report", "scan_test")
+load("//:toolchain.bzl", "periphery_toolchain")
+load(":scan_inputs_tests.bzl", "core_data_inputs_test", "legacy_scanner", "model_resources")
 
 model_resources(
     name = "core_data_resources",
     testonly = True,
     paths = [
         "First.xcdatamodeld/V1.xcdatamodel/contents",
+        "First.xcdatamodeld/V2.xcdatamodel/contents",
         "Second.xcdatamodeld/V2.xcdatamodel/contents",
+        "standalone/Single.xcdatamodel/contents",
         "Second.xcdatamodeld/.xccurrentversion",
         "Mapping.xcmappingmodel/xcmapping.xml",
+    ],
+    trees = [
+        "Generated.xcdatamodeld",
+        "generated/Single.xcdatamodel",
+        "GeneratedMapping.xcmappingmodel",
     ],
 )
 
 core_data_inputs_test(
     name = "core_data_inputs_test",
-    mappings = ["Mapping.xcmappingmodel/xcmapping.xml"],
+    mappings = [
+        "Mapping.xcmappingmodel/xcmapping.xml",
+        "GeneratedMapping.xcmappingmodel",
+    ],
     models = [
         "First.xcdatamodeld/V1.xcdatamodel/contents",
+        "First.xcdatamodeld/V2.xcdatamodel/contents",
         "Second.xcdatamodeld/V2.xcdatamodel/contents",
+        "standalone/Single.xcdatamodel/contents",
+        "Generated.xcdatamodeld",
+        "generated/Single.xcdatamodel",
     ],
     target_under_test = ":core_data_resources",
 )
@@ -29,4 +45,40 @@ model_resources(
 core_data_inputs_test(
     name = "empty_core_data_inputs_test",
     target_under_test = ":empty_core_data_resources",
+)
+
+legacy_scanner(
+    name = "legacy_scanner",
+    testonly = True,
+    src = "legacy_scanner.py",
+)
+
+periphery_toolchain(
+    name = "legacy_periphery",
+    testonly = True,
+    binary = ":legacy_scanner",
+)
+
+toolchain(
+    name = "legacy_toolchain",
+    testonly = True,
+    toolchain = ":legacy_periphery",
+    toolchain_type = "//:toolchain_type",
+)
+
+scan(
+    name = "legacy_scan",
+    testonly = True,
+    deps = [":core_data_resources"],
+)
+
+scan_test(
+    name = "legacy_scan_test",
+    deps = [":core_data_resources"],
+)
+
+scan_report(
+    name = "legacy_report",
+    testonly = True,
+    deps = [":core_data_resources"],
 )

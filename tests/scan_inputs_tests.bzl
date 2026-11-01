@@ -9,7 +9,27 @@ def _model_resources_impl(ctx):
     files = []
     for path in ctx.attr.paths:
         resource = ctx.actions.declare_file(ctx.label.name + "/" + path)
-        ctx.actions.write(resource, "")
+        if path.endswith("/contents"):
+            contents = '<model><attribute customClassName="CustomTransformer"/></model>'
+        elif path.endswith("/xcmapping.xml"):
+            contents = '<database><attribute name="migrationpolicyclassname">CustomMigrationPolicy</attribute></database>'
+        else:
+            contents = "metadata, not model XML"
+        ctx.actions.write(resource, contents)
+        files.append(resource)
+    for path in ctx.attr.trees:
+        resource = ctx.actions.declare_directory(ctx.label.name + "/" + path)
+        mapping = resource.extension == "xcmappingmodel"
+        ctx.actions.run_shell(
+            outputs = [resource],
+            arguments = [
+                resource.path,
+                "V1.xcdatamodel" if resource.extension == "xcdatamodeld" else "",
+                '<database><attribute name="migrationpolicyclassname">CustomMigrationPolicy</attribute></database>' if mapping else '<model><attribute customClassName="CustomTransformer"/></model>',
+                "xcmapping.xml" if mapping else "contents",
+            ],
+            command = 'mkdir -p "$1/$2"; printf "%s" "$3" > "$1/$2/$4"',
+        )
         files.append(resource)
     return [resources.bucketize_typed(
         resources = files,
@@ -19,7 +39,10 @@ def _model_resources_impl(ctx):
 
 model_resources = rule(
     implementation = _model_resources_impl,
-    attrs = {"paths": attr.string_list()},
+    attrs = {
+        "paths": attr.string_list(),
+        "trees": attr.string_list(),
+    },
 )
 
 def _core_data_inputs_test_impl(ctx):
@@ -38,4 +61,15 @@ core_data_inputs_test = analysistest.make(
         "mappings": attr.string_list(),
     },
     extra_target_under_test_aspects = [scan_inputs_aspect],
+)
+
+def _legacy_scanner_impl(ctx):
+    executable = ctx.actions.declare_file(ctx.label.name)
+    ctx.actions.symlink(output = executable, target_file = ctx.file.src, is_executable = True)
+    return [DefaultInfo(executable = executable)]
+
+legacy_scanner = rule(
+    implementation = _legacy_scanner_impl,
+    executable = True,
+    attrs = {"src": attr.label(allow_single_file = True)},
 )

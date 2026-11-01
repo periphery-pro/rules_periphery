@@ -3,6 +3,7 @@ Declares the implementations backing the public `scan`, `scan_test`, and
 `scan_report` rules.
 """
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@rules_apple//apple:providers.bzl", "AppleResourceInfo")
 load("@rules_swift//swift:providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
@@ -109,7 +110,7 @@ def _scan_inputs_aspect_impl(target, ctx):
                 # We separate them because Periphery uses a different parser for each.
                 for bucket in info.datamodels:
                     for resource in bucket[2].to_list():
-                        if ".xcdatamodel" in resource.path and resource.basename == "contents":
+                        if ".xcdatamodel" in resource.path and (resource.basename == "contents" or resource.is_directory):
                             xcdatamodels.append(resource)
                         elif ".xcmappingmodel" in resource.path:
                             xcmappingmodels.append(resource)
@@ -185,17 +186,29 @@ def _collect_inputs(ctx):
         test_targets = sets.to_list(test_targets_set),
     )
 
+def _data_model_directory(file, path):
+    if file.is_directory:
+        return path if file.extension == "xcdatamodeld" else paths.dirname(path)
+    return paths.dirname(paths.dirname(path))
+
 def _write_project_config(ctx, inputs, path_for):
     indexstores_config = [path_for(file) for file in inputs.indexstores]
     if ctx.attr.global_indexstore:
         indexstores_config = [ctx.attr.global_indexstore]
 
+    # Older CLIs accept model directories rather than the leaf XML files Bazel
+    # exposes. Keep the files as action/runfiles inputs, but pass their parent
+    # directories to the CLI. For an unversioned .xcdatamodel, its parent is the
+    # directory containing that model; for a versioned model it is .xcdatamodeld.
+    xcdatamodel_dirs = sets.make([_data_model_directory(file, path_for(file)) for file in inputs.xcdatamodels])
+    xcmappingmodel_dirs = sets.make([path_for(file) if file.is_directory else paths.dirname(path_for(file)) for file in inputs.xcmappingmodels])
+
     project_config = struct(
         indexstores = indexstores_config,
         plists = [path_for(file) for file in inputs.plists],
         xibs = [path_for(file) for file in inputs.xibs],
-        xcdatamodels = [path_for(file) for file in inputs.xcdatamodels],
-        xcmappingmodels = [path_for(file) for file in inputs.xcmappingmodels],
+        xcdatamodels = sets.to_list(xcdatamodel_dirs),
+        xcmappingmodels = sets.to_list(xcmappingmodel_dirs),
         test_targets = inputs.test_targets,
     )
 
