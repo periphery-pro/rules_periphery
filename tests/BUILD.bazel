@@ -1,0 +1,32 @@
+load(":scan_inputs_tests.bzl", "core_data_inputs_test", "model_resources")
+
+model_resources(
+    name = "core_data_resources",
+    testonly = True,
+    paths = [
+        "First.xcdatamodeld/V1.xcdatamodel/contents",
+        "Second.xcdatamodeld/V2.xcdatamodel/contents",
+        "Second.xcdatamodeld/.xccurrentversion",
+        "Mapping.xcmappingmodel/xcmapping.xml",
+    ],
+)
+
+core_data_inputs_test(
+    name = "core_data_inputs_test",
+    mappings = ["Mapping.xcmappingmodel/xcmapping.xml"],
+    models = [
+        "First.xcdatamodeld/V1.xcdatamodel/contents",
+        "Second.xcdatamodeld/V2.xcdatamodel/contents",
+    ],
+    target_under_test = ":core_data_resources",
+)
+
+model_resources(
+    name = "empty_core_data_resources",
+    testonly = True,
+)
+
+core_data_inputs_test(
+    name = "empty_core_data_inputs_test",
+    target_under_test = ":empty_core_data_resources",
+)
