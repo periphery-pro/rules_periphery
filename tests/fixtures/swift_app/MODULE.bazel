@@ -6,6 +6,7 @@ local_path_override(
     path = "../../..",
 )
 
+bazel_dep(name = "rules_apple", version = "4.5.2")
 bazel_dep(name = "rules_swift", version = "3.6.0")
 
 periphery = use_extension("@rules_periphery//:extensions.bzl", "periphery")

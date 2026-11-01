@@ -25,14 +25,18 @@ PeripheryInfo = provider(
     },
 )
 
+# Follow both linked dependencies and embedded bundles. Keep aspect traversal
+# and input collection on the same attributes so neither can drop a subtree.
 _TRANSITIVE_ATTRS = [
     "app_clips",
     "deps",
     "extension",
     "extensions",
+    "frameworks",
     "plugins",
     "swift_target",
     "watch_application",
+    "xpc_services",
 ]
 
 def _periphery_info_providers(rule_attr):
