@@ -1,6 +1,6 @@
 load("//:rules.bzl", "scan", "scan_report", "scan_test")
 load("//:toolchain.bzl", "periphery_toolchain")
-load(":scan_inputs_tests.bzl", "core_data_inputs_test", "legacy_scanner", "model_resources")
+load(":scan_inputs_tests.bzl", "core_data_inputs_test", "interface_builder_inputs_test", "interface_builder_resources", "legacy_scanner", "model_resources")
 
 model_resources(
     name = "core_data_resources",
@@ -47,6 +47,62 @@ core_data_inputs_test(
     target_under_test = ":empty_core_data_resources",
 )
 
+interface_builder_resources(
+    name = "interface_builder_resources",
+    testonly = True,
+    storyboards = [
+        "Base.lproj/Main.storyboard",
+        "fr.lproj/Main.storyboard",
+    ],
+    xibs = [
+        "Views/First.xib",
+        "Views/Second.xib",
+        "Other/Third.xib",
+    ],
+)
+
+interface_builder_inputs_test(
+    name = "interface_builder_inputs_test",
+    paths = [
+        "Views/First.xib",
+        "Views/Second.xib",
+        "Other/Third.xib",
+        "Base.lproj/Main.storyboard",
+        "fr.lproj/Main.storyboard",
+    ],
+    storyboard_groups = 2,
+    target_under_test = ":interface_builder_resources",
+    xib_groups = 2,
+)
+
+interface_builder_resources(
+    name = "single_interface_builder_resources",
+    testonly = True,
+    storyboards = ["Single.storyboard"],
+    xibs = ["Single.xib"],
+)
+
+interface_builder_inputs_test(
+    name = "single_interface_builder_inputs_test",
+    paths = [
+        "Single.xib",
+        "Single.storyboard",
+    ],
+    storyboard_groups = 1,
+    target_under_test = ":single_interface_builder_resources",
+    xib_groups = 1,
+)
+
+interface_builder_resources(
+    name = "empty_interface_builder_resources",
+    testonly = True,
+)
+
+interface_builder_inputs_test(
+    name = "empty_interface_builder_inputs_test",
+    target_under_test = ":empty_interface_builder_resources",
+)
+
 legacy_scanner(
     name = "legacy_scanner",
     testonly = True,
@@ -69,16 +125,25 @@ toolchain(
 scan(
     name = "legacy_scan",
     testonly = True,
-    deps = [":core_data_resources"],
+    deps = [
+        ":core_data_resources",
+        ":interface_builder_resources",
+    ],
 )
 
 scan_test(
     name = "legacy_scan_test",
-    deps = [":core_data_resources"],
+    deps = [
+        ":core_data_resources",
+        ":interface_builder_resources",
+    ],
 )
 
 scan_report(
     name = "legacy_report",
     testonly = True,
-    deps = [":core_data_resources"],
+    deps = [
+        ":core_data_resources",
+        ":interface_builder_resources",
+    ],
 )
