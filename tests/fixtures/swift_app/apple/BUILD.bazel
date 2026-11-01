@@ -1,0 +1,64 @@
+load("@rules_apple//apple:macos.bzl", "macos_application", "macos_framework", "macos_xpc_service")
+load("@rules_periphery//:rules.bzl", "scan", "scan_report", "scan_test")
+load("@rules_swift//swift:swift.bzl", "swift_library")
+
+package(default_visibility = ["@rules_periphery//:generated"])
+
+swift_library(
+    name = "app_sources",
+    srcs = ["main.swift"],
+)
+
+swift_library(
+    name = "framework_sources",
+    srcs = ["Framework.swift"],
+)
+
+macos_framework(
+    name = "framework",
+    bundle_id = "pro.periphery.fixture.framework",
+    infoplists = ["Info.plist"],
+    minimum_os_version = "13.0",
+    deps = [":framework_sources"],
+)
+
+swift_library(
+    name = "service_sources",
+    srcs = ["Service.swift"],
+)
+
+macos_xpc_service(
+    name = "service",
+    bundle_id = "pro.periphery.fixture.service",
+    infoplists = ["Info.plist"],
+    minimum_os_version = "13.0",
+    deps = [":service_sources"],
+)
+
+macos_application(
+    name = "app",
+    bundle_id = "pro.periphery.fixture.app",
+    frameworks = [":framework"],
+    infoplists = ["Info.plist"],
+    minimum_os_version = "13.0",
+    xpc_services = [":service"],
+    deps = [":app_sources"],
+)
+
+# Select only the app: selecting the Swift libraries directly would mask
+# missing traversal of the frameworks and xpc_services attributes.
+scan(
+    name = "scan",
+    deps = [":app"],
+)
+
+scan_test(
+    name = "scan_test",
+    tags = ["manual"],
+    deps = [":app"],
+)
+
+scan_report(
+    name = "report",
+    deps = [":app"],
+)
