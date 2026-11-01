@@ -7,6 +7,17 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURE="$REPO_ROOT/tests/fixtures/simple_bazel"
 
+# Resource collection uses provider fixtures and needs no Swift compiler.
+(
+    cd "$REPO_ROOT"
+    bazel test //tests:core_data_inputs_test //tests:empty_core_data_inputs_test
+    # Check the directory interface used by older CLIs in the workspace,
+    # test runfiles, and the sandboxed report action.
+    bazel run --extra_toolchains=//tests:legacy_toolchain //tests:legacy_scan
+    bazel test --extra_toolchains=//tests:legacy_toolchain //tests:legacy_scan_test
+    bazel build --extra_toolchains=//tests:legacy_toolchain //tests:legacy_report
+)
+
 cd "$FIXTURE"
 
 fail() {
